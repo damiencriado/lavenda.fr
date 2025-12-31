@@ -1,0 +1,200 @@
+@font-face {
+  font-family: "Screener W01SC Bold";
+  src:
+    url("fonts/screener_w01sc_bold-webfont.woff2") format("woff2"),
+    url("fonts/screener_w01sc_bold-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Palette */
+  --bg: #050505;
+  --accent: #e0241b;
+  --accent-orange: #ff8a1f;
+
+  --font-display: "Screener W01SC Bold", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Layout */
+  --max-width: 40rem; /* ~640px */
+  --pad-x: 1rem;
+  --pad-y: 1.75rem;
+
+  --gap: 0.75rem;
+  --dot: 1.5rem;
+  --label: 3rem;
+
+  /* FX */
+  --dim: 0.24;
+  --grain: 0.5;
+
+  /* Glow jitter (piloté en JS): s'applique au texte ET au dot */
+  --glow-jitter: 1;
+}
+
+/* -------- Base / layout -------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+}
+
+body.is-preparing #selector { visibility: hidden; }
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.app__inner {
+  width: min(var(--max-width), 100%);
+  padding: var(--pad-y) var(--pad-x);
+  display: grid;
+  place-items: center;
+}
+
+/* -------- Selector -------- */
+.selector {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  user-select: none;
+}
+
+.dot {
+  width: var(--dot);
+  height: var(--dot);
+  flex: 0 0 auto;
+  border-radius: 9999px;
+}
+
+.label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  font-size: var(--label);
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gap: 0.75rem;
+    --dot: 1.5rem;
+    --label: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gap: 1rem;
+    --dot: 2rem;
+    --label: 4rem;
+  }
+}
+
+/* -------- FX (subtils, statiques) -------- */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+}
+
+/* -------- Décryptage (spans) -------- */
+#label { color: #fff; }
+
+.char-cell {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  vertical-align: bottom;
+  transition: color 120ms linear;
+}
+
+#label .char--lit {
+  color: #fff;
+  /* règle: une lettre allumée = glow; `--glow-jitter` module l'intensité */
+  text-shadow:
+    0 0 calc(0.35rem * var(--glow-jitter)) rgba(255,255,255, calc(0.24 * var(--glow-jitter))),
+    0 0 calc(0.95rem * var(--glow-jitter)) rgba(255,255,255, calc(0.42 * var(--glow-jitter)));
+}
+
+#label .char--dim {
+  color: rgba(255,255,255,var(--dim));
+  /* règle: pas de glow sur les lettres éteintes */
+  text-shadow: none;
+}
+
+#label .char--transparent { color: rgba(255,255,255,0); }
+
+/* ---- Failure overlay ---- */
+.lock-failure {
+  position: fixed;
+  left: 50%;
+  top: calc(50% - 4.75rem);
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: none;
+
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  font-size: 1.15rem;
+  color: rgba(255,255,255,0.95);
+  text-shadow:
+    0 0 0.8rem rgba(255,255,255,0.22),
+    0 0 1.6rem rgba(0,0,0,0.45);
+
+  opacity: 0;
+}
+
+.lock-failure.is-on {
+  opacity: 1;
+}
+
+@media (min-width: 640px) {
+  .lock-failure {
+    font-size: 1.35rem;
+    top: calc(50% - 5.5rem);
+  }
+}
+
+/* -------- Dot states -------- */
+.dot--gray { background: rgba(255,255,255,0.20); }
+.dot--white { background: #fff; }
+.dot--red { background: var(--accent); }
+.dot--orange { background: var(--accent-orange); }
+
+.dot--gray {
+  /* LED éteinte: pas de jitter */
+  box-shadow:
+    0 0 0.45rem rgba(255,255,255, 0.08),
+    0 0 1rem rgba(0,0,0,0.35);
+}
+.dot--white {
+  box-shadow:
+    0 0 0.75rem rgba(255,255,255, calc(0.40 * var(--glow-jitter))),
+    0 0 1.6rem rgba(255,255,255, calc(0.22 * var(--glow-jitter)));
+}
+.dot--red {
+  box-shadow:
+    0 0 0.75rem rgba(224,36,27, calc(0.40 * var(--glow-jitter))),
+    0 0 1.60rem rgba(224,36,27, calc(0.22 * var(--glow-jitter)));
+}
+.dot--orange {
+  box-shadow:
+    0 0 0.75rem rgba(255,138,31, calc(0.40 * var(--glow-jitter))),
+    0 0 1.60rem rgba(255,138,31, calc(0.22 * var(--glow-jitter)));
+}
